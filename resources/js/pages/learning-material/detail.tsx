@@ -1,3 +1,5 @@
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AppLayout from '@/layouts/app-layout';
 import { api } from '@/lib/api';
 import { BreadcrumbItem } from '@/types';
@@ -7,6 +9,7 @@ import { AxiosError } from 'axios';
 import { BookOpen, FileText, Loader2, User } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import CreateQuestion from '../question/create';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Daftar Materi', href: '/admin/learning-material' },
@@ -68,6 +71,8 @@ export default function Detail() {
     const { id } = usePage<{ id: number }>().props;
     const [material, setMaterial] = useState<LearningMaterial | null>(null);
     const [loading, setLoading] = useState(true);
+    const [open, setOpen] = useState(false);
+    const [value, setValue] = useState('file');
 
     const fetchMaterial = useCallback(async () => {
         setLoading(true);
@@ -163,32 +168,66 @@ export default function Detail() {
                     </p>
                 </div>
 
-                {/* File viewer */}
-                <div className="rounded-xl border border-muted-foreground/20 bg-background p-5 shadow-sm">
-                    <div className="mb-4 flex items-center justify-between">
-                        <p className="text-xs font-medium tracking-widest text-muted-foreground/60 uppercase">File Materi</p>
-                        <div className="flex items-center gap-2">
-                            <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${extColor}`}>{fileExt}</span>
-                            <span className="max-w-[200px] truncate text-xs text-muted-foreground">{fileName}</span>
-                            <a
-                                href={filePath}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="rounded-md border border-border/30 px-2.5 py-1 text-xs transition hover:bg-muted"
-                            >
-                                Buka
-                            </a>
-                        </div>
+                <Tabs value={value} onValueChange={setValue}>
+                    <div className='flex justify-between items-center'>
+                        <TabsList>
+                            <TabsTrigger value="file">File Materi</TabsTrigger>
+                            <TabsTrigger value="questions">Soal</TabsTrigger>
+                        </TabsList>
+                        {value === 'questions' ? (
+                            <Dialog open={open} onOpenChange={setOpen}>
+                                <DialogTrigger asChild>
+                                    <button className="mr-8 cursor-pointer rounded-lg bg-green-600 px-4 py-2 font-medium text-foreground shadow-md transition hover:font-normal hover:shadow-transparent">
+                                        + Tambah Soal
+                                    </button>
+                                </DialogTrigger>
+
+                                <DialogContent className="flex max-h-[80vh] flex-col">
+                                    <DialogHeader>
+                                        <DialogTitle>Tambah Soal</DialogTitle>
+                                    </DialogHeader>
+
+                                    <div className="flex-1 overflow-y-auto px-4">
+                                        <CreateQuestion
+                                    onSuccess={() => {
+                                        setOpen(false);
+                                    }}
+                                />
+                                    </div>
+                                </DialogContent>
+                            </Dialog>
+                        ) : null}
                     </div>
+                    <TabsContent value="file">
+                        {/* File viewer */}
+                        <div className="rounded-xl border border-muted-foreground/20 bg-background p-5 shadow-sm">
+                            <div className="mb-4 flex items-center justify-between">
+                                <p className="text-xs font-medium tracking-widest text-muted-foreground/60 uppercase">File Materi</p>
+                                <div className="flex items-center gap-2">
+                                    <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${extColor}`}>{fileExt}</span>
+                                    <span className="max-w-[200px] truncate text-xs text-muted-foreground">{fileName}</span>
+                                    <a
+                                        href={filePath}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="rounded-md border border-border/30 px-2.5 py-1 text-xs transition hover:bg-muted"
+                                    >
+                                        Buka
+                                    </a>
+                                </div>
+                            </div>
 
-                    <DocumentViewer filePath={filePath} />
+                            <DocumentViewer filePath={filePath} />
 
-                    {!material.file_path && (
-                        <p className="mt-2 text-center text-xs text-muted-foreground/50 italic">
-                            * Menampilkan file dummy — belum ada file yang diupload
-                        </p>
-                    )}
-                </div>
+                            {!material.file_path && (
+                                <p className="mt-2 text-center text-xs text-muted-foreground/50 italic">
+                                    * Menampilkan file dummy — belum ada file yang diupload
+                                </p>
+                            )}
+                        </div>
+                    </TabsContent>
+                    <TabsContent value="questions">Soal</TabsContent>
+                </Tabs>
             </div>
         </AppLayout>
     );

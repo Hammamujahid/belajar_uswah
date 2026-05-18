@@ -80,7 +80,9 @@ class LearningMaterialController extends Controller
                     [
                         'folder' => 'e-learning',
                         'resource_type' => 'raw',
-                        'public_id'     => Str::slug($originalName) . '-' . time()
+                        'public_id'     => Str::slug($originalName) . '-' . time(),
+                        'filename_override' => $request->file('file')->getClientOriginalName(),
+                        'use_filename' => true,
                     ]
                 );
                 $data['file_path'] = $uploadedFile['secure_url'];
@@ -174,7 +176,9 @@ class LearningMaterialController extends Controller
                     [
                         'folder' => 'e-learning',
                         'resource_type' => 'raw',
-                        'public_id'     => Str::slug($originalName) . '-' . time()
+                        'public_id'     => Str::slug($originalName) . '-' . time(),
+                        'filename_override' => $request->file('file')->getClientOriginalName(),
+                        'use_filename' => true,
                     ]
                 );
                 $data['file_path'] = $uploadedFile['secure_url'];

@@ -67,14 +67,14 @@ class QuestionController extends Controller
             'is_deleted' => false
         ];
 
-        if ($request->has('media')) {
+        if ($request->hasFile('media')) {
             try {
                 $uploadImage = Cloudinary::uploadApi()->upload(
                     $request->image('media')->getRealPath(),
                     [
                         'folder' => 'e-learning',
-                        'resoure_type' => 'auto',
-                        'public_id' => $request->learning_materia_id . '-soal' . time()
+                        'resource_type' => 'auto',
+                        'public_id' => $request->learning_material_id . '-soal' . time()
                     ]
                 );
                 $data['media_path'] = $uploadImage['secure_url'];
@@ -89,7 +89,7 @@ class QuestionController extends Controller
         $question = Question::create($data);
 
         return response()->json([
-            'data' => $question->load('subject'),
+            'data' => $question->load('learning_material'),
         ], 201);
     }
 

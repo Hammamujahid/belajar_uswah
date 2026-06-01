@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AppLayout from '@/layouts/app-layout';
 import { api } from '@/lib/api';
 import { BreadcrumbItem } from '@/types';
-import { LearningMaterial } from '@/types/interfaces';
+import { LearningMaterial, Question } from '@/types/interfaces';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { AxiosError } from 'axios';
 import { BookOpen, FileText, Loader2, User } from 'lucide-react';
@@ -70,6 +70,9 @@ function DocumentViewer({ filePath }: { filePath: string }) {
 export default function Detail() {
     const { id } = usePage<{ id: number }>().props;
     const [material, setMaterial] = useState<LearningMaterial | null>(null);
+    const [questions, setQuestions] = useState<Question[]>([]);
+    const [questionsLoading, setQuestionsLoading] = useState(false);
+
     const [loading, setLoading] = useState(true);
     const [open, setOpen] = useState(false);
     const [value, setValue] = useState('file');
@@ -89,9 +92,25 @@ export default function Detail() {
         }
     }, [id]);
 
+    const fetchQuestions = useCallback(async () => {
+        setQuestionsLoading(true);
+        try {
+            const response = await api.get('/api/questions', {
+                params: { learning_material_id: id },
+            });
+            setQuestions(response.data.data);
+        } catch (err) {
+            const error = err as AxiosError<{ message?: string }>;
+            toast.error(error.response?.data?.message ?? 'Gagal memuat soal');
+        } finally {
+            setQuestionsLoading(false);
+        }
+    }, [id]);
+
     useEffect(() => {
         fetchMaterial();
-    }, [fetchMaterial]);
+        fetchQuestions();
+    }, [fetchMaterial, fetchQuestions]);
 
     if (loading || !material) {
         return (
@@ -169,7 +188,7 @@ export default function Detail() {
                 </div>
 
                 <Tabs value={value} onValueChange={setValue}>
-                    <div className='flex justify-between items-center'>
+                    <div className="flex items-center justify-between">
                         <TabsList>
                             <TabsTrigger value="file">File Materi</TabsTrigger>
                             <TabsTrigger value="questions">Soal</TabsTrigger>
@@ -189,10 +208,10 @@ export default function Detail() {
 
                                     <div className="flex-1 overflow-y-auto px-4">
                                         <CreateQuestion
-                                    onSuccess={() => {
-                                        setOpen(false);
-                                    }}
-                                />
+                                            onSuccess={() => {
+                                                setOpen(false);
+                                            }}
+                                        />
                                     </div>
                                 </DialogContent>
                             </Dialog>
@@ -226,7 +245,77 @@ export default function Detail() {
                             )}
                         </div>
                     </TabsContent>
-                    <TabsContent value="questions">Soal</TabsContent>
+                    <TabsContent value="questions">
+                        {questionsLoading ? (
+                            <div className="flex justify-center py-10">
+                                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                            </div>
+                        ) : questions.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center gap-2 py-16 text-muted-foreground">
+                                <FileText className="h-10 w-10 opacity-30" />
+                                <p className="text-sm">Belum ada soal untuk materi ini.</p>
+                            </div>
+                        ) : (
+                            <div className="mt-4 space-y-4">
+                                {questions.map((question, qIndex) => (
+                                    <div key={question.id} className="rounded-xl border border-muted-foreground/20 bg-background p-5 shadow-sm">
+                                        {/* Header soal */}
+                                        <div className="mb-3 flex items-start gap-3">
+                                            <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">
+                                                {qIndex + 1}
+                                            </span>
+                                            <p className="text-sm leading-relaxed font-medium text-primary">{question.question_text}</p>
+                                        </div>
+
+                                        {/* Gambar soal (opsional) */}
+                                        {question.media_path && (
+                                            <img
+                                                src={question.media_path}
+                                                alt="Gambar soal"
+                                                className="mb-4 h-40 w-auto rounded-lg border border-border/20 object-cover"
+                                            />
+                                        )}
+
+                                        {/* Jawaban */}
+                                        <div className="space-y-2 pl-10">
+                                            {question.answers?.map((ans, aIndex) => (
+                                                <div
+                                                    key={ans.id}
+                                                    className={`flex items-start gap-3 rounded-lg border px-3 py-2 text-sm ${
+                                                        ans.is_correct
+                                                            ? 'border-green-300 bg-green-50 text-green-800'
+                                                            : 'border-border/30 text-primary/80'
+                                                    }`}
+                                                >
+                                                    {/* Label A B C D */}
+                                                    <span
+                                                        className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
+                                                            ans.is_correct ? 'bg-green-500 text-white' : 'bg-muted text-muted-foreground'
+                                                        }`}
+                                                    >
+                                                        {String.fromCharCode(65 + aIndex)}
+                                                    </span>
+
+                                                    <div className="flex flex-col gap-1">
+                                                        {ans.media_path && (
+                                                            <img
+                                                                src={ans.media_path}
+                                                                alt="Gambar jawaban"
+                                                                className="h-16 w-auto rounded object-cover"
+                                                            />
+                                                        )}
+                                                        <span>{ans.answer_text}</span>
+                                                    </div>
+
+                                                    {ans.is_correct && <span className="ml-auto text-xs font-medium text-green-600">✓ Benar</span>}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </TabsContent>
                 </Tabs>
             </div>
         </AppLayout>

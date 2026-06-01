@@ -37,13 +37,14 @@ class SubjectController extends Controller
     {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
             'is_deleted' => ['nullable', 'boolean'],
-
         ]);
 
         $subject = Subject::create(
             [
                 'name' => $request->name,
+                'description' => $request->description,
                 'is_deleted' => $request->is_deleted
             ]
         );
@@ -85,6 +86,7 @@ class SubjectController extends Controller
 
         $validatedData = $request->validate([
             'name' => 'sometimes|required|string|max:20',
+            'description' => 'nullable|string',
             'is_deleted'  => 'sometimes|boolean',
         ]);
 

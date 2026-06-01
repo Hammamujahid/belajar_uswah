@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\question;
 use Illuminate\Http\Request;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use App\Models\Answer;
 use Illuminate\Support\Str;
 
 class QuestionController extends Controller
@@ -14,7 +15,7 @@ class QuestionController extends Controller
      */
     public function index(Request $request)
     {
-        $questions = Question::query();
+        $questions = Question::with('answers');
 
         $questions->when(
             $request->has('is_deleted'),
@@ -23,7 +24,7 @@ class QuestionController extends Controller
 
         $questions->when(
             $request->has('learning_material_id'),
-            fn($q) => $q->where('learning_materia_id', $request->learning_material_id)
+            fn($q) => $q->where('learning_material_id', $request->learning_material_id)
         );
 
         return response()->json([
@@ -54,45 +55,87 @@ class QuestionController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'learning_material_id' => 'required|exists:learning_materials,id',
-            'media' => 'nullable|image|mimes:png,jpg,jpeg,svg,webp|max:2048',
-            'question_text' => 'required|string|max:1000',
-            'created_by' => 'required|string|max:255'
+            'learning_material_id'   => 'required|exists:learning_materials,id',
+            'question_text'          => 'required|string|max:1000',
+            'created_by'             => 'required|string|max:255',
+            'question_image'         => 'nullable|image|mimes:png,jpg,jpeg,webp|max:2048',
+
+            'answers'                => 'required|array|size:4',
+            'answers.*.text'         => 'required|string|max:255',
+            'answers.*.is_correct'   => 'required|in:0,1',
+            'answers.*.image'        => 'nullable|image|mimes:png,jpg,jpeg,webp|max:2048',
         ]);
 
-        $data = [
-            'learning_material_id' => $request->learning_material_id,
-            'question_text' => $request->question_text,
-            'created_by' => $request->created_by,
-            'is_deleted' => false
-        ];
+        // Validasi tepat 1 jawaban benar
+        $correctCount = collect($request->input('answers'))
+            ->where('is_correct', '1')
+            ->count();
 
-        if ($request->hasFile('media')) {
-            try {
-                $uploadImage = Cloudinary::uploadApi()->upload(
-                    $request->image('media')->getRealPath(),
-                    [
-                        'folder' => 'e-learning',
-                        'resource_type' => 'auto',
-                        'public_id' => $request->learning_material_id . '-soal' . time()
-                    ]
-                );
-                $data['media_path'] = $uploadImage['secure_url'];
-                $data['public_id'] = $uploadImage['public_id'];
-            } catch (\Exception $e) {
-                return response()->json([
-                    'message' => 'Gagal upload image: ' . $e->getMessage()
-                ], 500);
-            }
+        if ($correctCount !== 1) {
+            return response()->json([
+                'message' => 'Tepat 1 jawaban harus ditandai benar.'
+            ], 422);
         }
 
-        $question = Question::create($data);
+        // ── 1. Upload gambar soal (opsional) ────────────────────────────
+        $questionData = [
+            'learning_material_id' => $request->learning_material_id,
+            'question_text'        => $request->question_text,
+            'created_by'           => $request->created_by,
+            'is_deleted'           => false,
+        ];
+
+        if ($request->hasFile('question_image')) {
+            $upload = Cloudinary::uploadApi()->upload(
+                $request->file('question_image')->getRealPath(),
+                [
+                    'folder'    => 'e-learning/questions',
+                    'public_id' => 'question-' . time(),
+                ]
+            );
+            $questionData['media_path'] = $upload['secure_url'];
+            $questionData['public_id']  = $upload['public_id'];
+        }
+
+        // ── 2. Simpan soal ──────────────────────────────────────────────
+        $question = Question::create($questionData);
+
+        // ── 3. Loop jawaban, upload gambar jika ada ─────────────────────
+        $answersData = [];
+
+        foreach ($request->input('answers') as $index => $answerInput) {
+            $row = [
+                'question_id' => $question->id,
+                'answer_text' => $answerInput['text'],
+                'is_correct'  => $answerInput['is_correct'] === '1',
+                'is_deleted'  => false,
+                'created_at'  => now(),
+                'updated_at'  => now(),
+            ];
+
+            if ($request->hasFile("answers.{$index}.image")) {
+                $upload = Cloudinary::uploadApi()->upload(
+                    $request->file("answers.{$index}.image")->getRealPath(),
+                    [
+                        'folder'    => 'e-learning/answers',
+                        'public_id' => "answer-{$index}-" . time(),
+                    ]
+                );
+                $row['media_path'] = $upload['secure_url'];
+                $row['public_id']  = $upload['public_id'];
+            }
+
+            $answersData[] = $row;
+        }
+
+        // ── 4. Insert 4 jawaban sekaligus (1 query) ─────────────────────
+        Answer::insert($answersData);
 
         return response()->json([
-            'data' => $question->load('learning_material'),
+            'message' => 'Soal dan jawaban berhasil disimpan',
+            'data'    => $question->load('answers'),
         ], 201);
     }
-
     /**
      * Display the specified resource.
      */

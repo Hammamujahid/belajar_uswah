@@ -14,9 +14,11 @@ class question extends Model
 
     protected $fillable = [
         'learning_material_id',
-        'media_path',
         'question_text',
-        'is_deleted'
+        'created_by',
+        'media_path',
+        'public_id',
+        'is_deleted',
     ];
 
     public function learningMaterial(): BelongsTo
@@ -26,7 +28,7 @@ class question extends Model
 
     public function answers(): HasMany
     {
-        return $this->hasMany(Answer::class);
+        return $this->hasMany(Answer::class, 'question_id', 'id');
     }
 
     public function checkingAnswers(): HasMany

@@ -1,6 +1,7 @@
 export interface Subject {
     id: number;
     name: string;
+    description: string;
     created_at: string;
     updated_at: string;
     is_deleted: boolean;
@@ -29,9 +30,21 @@ export interface Question {
         id: number;
         name: string;
     };
+    answers?: Answer[];
     media_path: string;
     question_text: string;
     created_by: string;
+    created_at: string;
+    updated_at: string;
+    is_deleted: boolean;
+}
+
+export interface Answer {
+    id: number;
+    question_id: number;
+    answer_text: string;
+    is_correct: boolean;
+    media_path: string;
     created_at: string;
     updated_at: string;
     is_deleted: boolean;

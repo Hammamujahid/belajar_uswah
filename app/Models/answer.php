@@ -14,7 +14,9 @@ class answer extends Model
         'question_id',
         'answer_text',
         'is_correct',
-        'is_deleted'
+        'is_deleted',
+        'media_path',
+        'public_id',
     ];
 
     public function question(): BelongsTo

@@ -99,7 +99,7 @@ export default function Welcome() {
                     <nav className="flex w-full items-center justify-between">
                         <div className="flex items-center gap-2">
                             <img src="/assets/logo.png" alt="Logo" width={48} height={48} className="sm:w-14" />
-                            <span className="text-base font-semibold text-secondary sm:text-lg">E-Learning</span>
+                            <span className="text-base font-semibold text-secondary sm:text-lg">Belajar Uswah</span>
                         </div>
                         <div className="flex items-center gap-2 sm:gap-4">
                             <Link
@@ -222,7 +222,7 @@ export default function Welcome() {
             {/* FOOTER */}
             <footer className="w-full bg-secondary-foreground py-6">
                 <div className="mx-auto flex max-w-7xl flex-col items-center gap-4 px-4 py-4 sm:flex-row sm:justify-between sm:px-6">
-                    <p className="text-sm text-primary-foreground">© 2026 E-Learning</p>
+                    <p className="text-sm text-primary-foreground">© 2026 Belajar Uswah</p>
                     <div className="flex items-center gap-4">
                         <a href="#" className="text-muted-foreground transition hover:text-primary-foreground">
                             <Instagram className="h-5 w-5" />

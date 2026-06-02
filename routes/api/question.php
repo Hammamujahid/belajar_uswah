@@ -11,6 +11,6 @@ Route::middleware(['auth:sanctum', RoleMiddleware::class . ':admin'])->group(fun
     Route::get('/questions/latest', [QuestionController::class, 'latest']);
     Route::post('/question', [QuestionController::class, 'store']);
     Route::get('/questions/{id}', [QuestionController::class, 'show']);
-    Route::patch('/questions/{id}', [QuestionController::class, 'update']);
-    Route::delete('/questions/{id}', [QuestionController::class, 'destroy']);
+    Route::patch('/question/{id}', [QuestionController::class, 'update']);
+    Route::delete('/question/{id}', [QuestionController::class, 'destroy']);
 });

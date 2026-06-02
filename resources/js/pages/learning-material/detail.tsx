@@ -6,10 +6,11 @@ import { BreadcrumbItem } from '@/types';
 import { LearningMaterial, Question } from '@/types/interfaces';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { AxiosError } from 'axios';
-import { BookOpen, FileText, Loader2, User } from 'lucide-react';
+import { BookOpen, FileText, Loader2, Pen, Trash2, User } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import CreateQuestion from '../question/create';
+import EditQuestion from '../question/edit';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Daftar Materi', href: '/admin/learning-material' },
@@ -72,9 +73,10 @@ export default function Detail() {
     const [material, setMaterial] = useState<LearningMaterial | null>(null);
     const [questions, setQuestions] = useState<Question[]>([]);
     const [questionsLoading, setQuestionsLoading] = useState(false);
-
+    const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
+    const [openEdit, setOpenEdit] = useState(false);
     const [loading, setLoading] = useState(true);
-    const [open, setOpen] = useState(false);
+    const [openAdd, setOpenAdd] = useState(false);
     const [value, setValue] = useState('file');
 
     const fetchMaterial = useCallback(async () => {
@@ -111,6 +113,23 @@ export default function Detail() {
         fetchMaterial();
         fetchQuestions();
     }, [fetchMaterial, fetchQuestions]);
+
+    const handleDelete = async (e: React.MouseEvent, questionId: number) => {
+        e.stopPropagation();
+
+        if (!confirm('Yakin ingin hapus soal ini?')) return;
+
+        try {
+            await api.delete(`/api/question/${questionId}`);
+
+            toast.success('Soal berhasil dihapus');
+
+            window.location.reload(); // atau update state
+        } catch (error) {
+            toast.error('Gagal menghapus soal');
+            console.error(error);
+        }
+    };
 
     if (loading || !material) {
         return (
@@ -194,9 +213,9 @@ export default function Detail() {
                             <TabsTrigger value="questions">Soal</TabsTrigger>
                         </TabsList>
                         {value === 'questions' ? (
-                            <Dialog open={open} onOpenChange={setOpen}>
+                            <Dialog open={openAdd} onOpenChange={setOpenAdd}>
                                 <DialogTrigger asChild>
-                                    <button className="mr-8 cursor-pointer rounded-lg bg-green-600 px-4 py-2 font-medium text-foreground shadow-md transition hover:font-normal hover:shadow-transparent">
+                                    <button className="cursor-pointer rounded-lg bg-green-600 px-4 py-2 font-medium text-foreground shadow-md transition hover:font-normal hover:shadow-transparent">
                                         + Tambah Soal
                                     </button>
                                 </DialogTrigger>
@@ -209,7 +228,8 @@ export default function Detail() {
                                     <div className="flex-1 overflow-y-auto px-4">
                                         <CreateQuestion
                                             onSuccess={() => {
-                                                setOpen(false);
+                                                setOpenAdd(false);
+                                                fetchQuestions();
                                             }}
                                         />
                                     </div>
@@ -264,7 +284,45 @@ export default function Detail() {
                                             <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">
                                                 {qIndex + 1}
                                             </span>
-                                            <p className="text-sm leading-relaxed font-medium text-primary">{question.question_text}</p>
+                                            <div className="flex w-full justify-between">
+                                                <p className="text-sm leading-relaxed font-medium text-primary">{question.question_text}</p>
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <button
+                                                        onClick={(e) => handleDelete(e, question.id)}
+                                                        className="cursor-pointer rounded-md bg-red-100 p-2 text-red-600 transition hover:bg-red-200"
+                                                        title="Delete"
+                                                    >
+                                                        <Trash2 size={8} />
+                                                    </button>
+                                                    <Dialog open={openEdit} onOpenChange={setOpenEdit}>
+                                                        <DialogTrigger asChild>
+                                                            <button
+                                                                onClick={() => setSelectedQuestion(question)} // ✅
+                                                                className="cursor-pointer rounded-md bg-yellow-100 p-2 text-yellow-600 transition hover:bg-yellow-200"
+                                                                title="Edit"
+                                                            >
+                                                                <Pen size={8} />
+                                                            </button>
+                                                        </DialogTrigger>
+
+                                                        <DialogContent className="flex max-h-[80vh] flex-col">
+                                                            <DialogHeader>
+                                                                <DialogTitle>Edit Soal</DialogTitle>
+                                                            </DialogHeader>
+
+                                                            <div className="flex-1 overflow-y-auto px-4">
+                                                                <EditQuestion
+                                                                    question={selectedQuestion!}
+                                                                    onSuccess={() => {
+                                                                        setOpenEdit(false);
+                                                                        fetchQuestions();
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        </DialogContent>
+                                                    </Dialog>
+                                                </div>
+                                            </div>
                                         </div>
 
                                         {/* Gambar soal (opsional) */}
